@@ -1,0 +1,81 @@
+moordyn_tether_node:
+  ros__parameters:
+    # TF frame names for tether attachment points.
+    # anchor frames  → exact point where the tether is fixed (published by frame_manager).
+    # base   frames  → body center / base_link (used to compute the lever arm for
+    #                  the angular velocity contribution to anchor velocity).
+    boat_anchor_frame: "boat/tether_anchor"
+    boat_base_frame:   "boat/base_link"
+    drone_hook_frame:  "drone/base_link"
+    drone_base_frame:  "drone/base_link"
+
+    # Timeout for TF lookups (seconds). Physics step is skipped if any
+    # transform is unavailable within this window.
+    tf_timeout_s: 0.1
+
+    # Ground-truth odometry topics (body-frame velocities and orientation).
+    # Positions are taken from TF, not from these topics.
+    boat_odom_topic:  "boat/ground_truth/odometry"
+    drone_odom_topic: "drone/ground_truth/odometry"
+
+    # Gazebo entity link names for wrench application
+    boat_link_name:  "wamv::wamv/base_link"
+    drone_link_name: "x500::base_link"
+
+    # Physics loop rate (Hz)
+    physics_rate_hz: 50.0
+
+    # Topic names (relative unless prefixed with /)
+    wrench_topic: "/world/wamv_world/wrench/persistent"
+    marker_topic: "tether_geometry_marker"
+
+    # Marker visualization
+    marker_line_width: 0.01
+    marker_color: [0.2, 0.2, 0.2, 1.0]
+
+    # Force Marker visualization (Arrow)
+    force_marker_topic: "tether_force_markers"
+    force_marker_max_force: 10.0  # Force [N] that corresponds to the maximum arrow length
+    force_marker_max_length: 2.0  # Maximum length of the arrow [m]
+    force_marker_color: [1.0, 0.0, 0.0, 1.0] # RGBA
+
+    # Force magnitude topics for plotting
+    force_magnitude_boat_topic: "tether_force_boat_mag"
+    force_magnitude_drone_topic: "tether_force_drone_mag"
+
+    # Virtual Winch configuration
+    # Prevents slack cable sag or excessive pulling.
+    winch_enabled: true
+    # Geometric winch: L = slack_factor * d
+    winch_slack_factor: 1.0526 # L = d/(1-eps_0) with eps_0 = 0.05 (slack ratio of the model); 1.0526 = 5.26 % extra cable beyond the span
+    # The geometric winch is ideal: the speed limit of the real winch is imposed by the UAV NMPC (|d_dot| <= 2 m/s)
+    winch_min_length: 1.5      # minimum unstretched length [m]: 5 cm segments (N = 30), CFL-safe with EA = 1e4 and dtM = 2e-5
+    winch_max_length: 100.0    # maximum unstretched length [m]
+
+    # Force filter: second-order Butterworth low-pass, removes the residual axial vibration of the line (a few hertz)
+    # with the delay of the former first-order filter (alpha 0.05 at 50 Hz, ~0.3 s at the wave frequency)
+    force_filter_cutoff_hz: 0.7   # [Hz]
+
+    # Limits on the force applied in Gazebo (protect the vehicles from numerical excursions of the cable solver).
+    # The raw MoorDyn force is still published on the force magnitude topics.
+    wrench_max_force_n: 40.0        # maximum magnitude of the applied force [N] (weight of 100 m of tether: ~20 N)
+    wrench_max_rate_n_per_s: 100.0  # maximum rate of change of the applied force [N/s]
+
+    # Odometry samples with larger velocities are discarded (corrupted samples, see odometryIsSane)
+    max_linear_velocity: 50.0       # [m/s]
+    max_angular_velocity: 50.0      # [rad/s]
+
+    # Persistent wrench handling in Gazebo (see publishWrench): the list of entries is emptied every rebase period and
+    # the force is only updated when it differs from the applied one by more than the dead band.
+    wrench_rebase_period_s: 10.0
+    wrench_deadband_n: 0.02
+
+    # Straight tether model: MoorDyn is unstable for short lines and its line crosses the deck when the UAV rests on
+    # the pad, so below straight_switch_distance the cable is a straight massless line from the drone to the winch
+    # (no force on the boat). Its tension is ramped to pull_tension while the pull is requested (~/tether_pull, during
+    # takeoff and landing) and to zero otherwise. MoorDyn is initialised again once the pull is released, the tension
+    # is zero and the span exceeds straight_exit_distance.
+    straight_switch_distance: 1.4  # [m] slightly below winch_min_length / (1 - eps_0)
+    straight_exit_distance: 1.6    # [m] hysteresis above the switch distance
+    pull_tension: 4.0              # [N]
+    pull_rate: 4.0                 # [N/s] ramp of the tension

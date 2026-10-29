@@ -1,0 +1,25 @@
+# colcon
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.pyc
+
+# acados: only the C sources compiled by CMake are versioned; everything else written by the generators is ignored
+*.o
+*.so
+acados_ocp*.json
+control/*/acados_solver/Makefile
+control/*/acados_solver/main_*.c
+control/*/acados_solver/acados_sim_solver_*
+control/*/acados_solver/acados_solver.pxd
+control/*/acados_solver/*kinematic*
+
+# MoorDyn outputs written next to its input file
+simulation/moordyn_tether/config/lines*.out
+simulation/moordyn_tether/config/lines*.log
+
+# Bags recorded from the Mission Control Centre
+bags/

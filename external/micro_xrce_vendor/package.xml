@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>micro_xrce_vendor</name>
+  <version>3.0.1</version>
+  <description>Vendored Micro XRCE-DDS Agent, the bridge between PX4 and ROS 2</description>
+  <maintainer email="tomasesteves03@gmail.com">Tomás Esteves</maintainer>
+  <license>Apache-2.0</license>
+
+  <url type="bugtracker">https://github.com/eProsima/Micro-XRCE-DDS-Agent/issues</url>
+  <url type="repository">https://github.com/eProsima/Micro-XRCE-DDS-Agent</url>
+  <url type="website">https://github.com/eProsima/Micro-XRCE-DDS-Agent</url>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

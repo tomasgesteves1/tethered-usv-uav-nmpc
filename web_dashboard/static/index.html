@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>UAV-USV Dashboard</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+<header>
+    <h1>Tethered UAV&ndash;USV</h1>
+    <div class="sim">
+        <span id="sim-chip" class="chip off">simulation off</span>
+        <span id="sim-time" class="muted"></span>
+        <label class="muted"><input type="checkbox" id="sim-gui"> Gazebo GUI</label>
+        <button id="sim-start">Start simulation</button>
+        <button id="sim-stop" class="secondary">Stop</button>
+    </div>
+</header>
+
+<main>
+    <section class="panel" id="missions-panel">
+        <h2>Missions</h2>
+        <ul id="mission-list"></ul>
+        <div id="mission-detail" class="detail hidden">
+            <h3 id="md-name"></h3>
+            <p id="md-desc" class="muted"></p>
+            <div class="steps"><span class="tag">UAV</span><span id="md-uav"></span></div>
+            <div class="steps"><span class="tag">USV</span><span id="md-usv"></span></div>
+            <p id="md-launch" class="muted small"></p>
+            <label><input type="checkbox" id="md-record" checked> Record bag (simulation time)</label>
+            <div class="buttons">
+                <button id="mission-start">Start mission</button>
+                <button id="mission-abort" class="warn">Abort (land)</button>
+                <button id="mission-stop" class="secondary">Stop</button>
+            </div>
+        </div>
+        <div id="mission-status" class="status"></div>
+    </section>
+
+    <section class="panel" id="map-panel">
+        <h2>Map <span class="muted small">(top view, world frame)</span></h2>
+        <canvas id="map"></canvas>
+        <div class="legend small">
+            <span><i style="background:var(--usv)"></i>USV</span>
+            <span><i style="background:var(--uav)"></i>UAV</span>
+            <span><i style="background:var(--tether)"></i>tether</span>
+            <span><i style="background:var(--intruder)"></i>target</span>
+            <span><i style="background:var(--tower)"></i>tower</span>
+            <span class="muted">dashed: references</span>
+        </div>
+    </section>
+
+    <section class="panel" id="telemetry-panel">
+        <h2>Telemetry</h2>
+        <div class="cards">
+            <div class="card"><h4>UAV</h4><dl id="t-uav"></dl></div>
+            <div class="card"><h4>USV</h4><dl id="t-usv"></dl></div>
+            <div class="card"><h4>Tether</h4><dl id="t-tether"></dl></div>
+            <div class="card"><h4>Target</h4><dl id="t-intruder"></dl></div>
+        </div>
+        <h2>Mission progress</h2>
+        <div id="progress"></div>
+    </section>
+</main>
+
+<details id="logs">
+    <summary>Logs
+        <select id="log-name"><option>sim</option><option selected>mission</option><option>bag</option></select>
+    </summary>
+    <pre id="log-text"></pre>
+</details>
+
+<script src="index.js"></script>
+</body>
+</html>

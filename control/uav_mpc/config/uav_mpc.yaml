@@ -1,0 +1,89 @@
+uav_mpc_node:
+  ros__parameters:
+    # Type of trajectory to follow: "hold" or "external"
+    trajectory_type: "hold"
+
+    # Hold mode height
+    hold_height: 7.0     # Target hovering altitude in hold mode (m)
+
+    # Takeoff height (used by PX4 takeoff command and state machine checks)
+    takeoff_height: 4.0
+
+    # ------------------------------------------------------------------
+    # Predictive model (Section 3.3, Table 4.7). Read by generate_acados_uav.py
+    # ------------------------------------------------------------------
+    mass: 2.06                   # m (kg)
+    gravity: 9.81                # g (m/s^2)
+    rotor_drag: 0.218            # d_r (N*s/m)
+    tau_roll_pitch: 0.08         # tau (s), identified from the PX4 log (attitude setpoint against ground truth)
+    tau_yaw: 0.3571              # tau_psi (s) = 1/MC_YAW_P
+    tilt_transport_delay: 0.12   # T_t (s), delay of the attitude setpoint: 0.08 s in PX4 (identified from its log) plus
+                                 # 0.04 s age of the measured attitude
+    thrust_transport_delay: 0.04 # T_T (s), transport delay of the thrust command (identified from the bags)
+    tether_density: 0.020        # mu (kg/m)
+    tether_slack_ratio: 0.05     # epsilon_0
+    tether_deflection_deg: 30.4  # gamma_0 (deg)
+    tether_delta: 0.05           # delta, regularisation of e_h
+
+    # Prediction horizon (Table 4.12)
+    horizon_steps: 50            # N
+    sampling_time: 0.02          # T_s (s)
+
+    # Cost weights (Table 4.12)
+    weight_Qp: [60.0, 60.0, 150.0]
+    huber_delta: 1.0             # m, position error beyond which its cost grows linearly (pseudo-Huber)
+    weight_Qv: [5.0, 5.0, 7.5]
+    weight_Qtilt: [5.0, 5.0]
+    weight_q_psi: 20.0
+    yaw_epsilon: 4.0             # m^2, regularisation of the bearing: the yaw weight fades within ~2 m of the anchor
+    weight_Q_thrust: 0.118                # weight of (T - m g)^2
+    weight_R: [30.0, 30.0, 30.0, 0.01]  # [phi_dot, theta_dot, psi_dot, T_dot]; yaw rate as costly as roll and pitch rates,
+                                        # since rotating the yaw also rotates the commanded thrust axis
+
+    # Input limits
+    phi_dot_max: 0.8             # rad/s
+    theta_dot_max: 0.8           # rad/s
+    psi_dot_max: 1.0             # rad/s
+    thrust_rate_max: 100.0       # T_dot_max (N/s): full range in ~0.4 s, within the horizon (the rotors respond in ~20 ms)
+    thrust_min: 2.02             # T_min (N) = 0.1 m g
+    thrust_max: 39.96            # T_max (N) = 0.9 * 4 k omega_max^2 (k = 1.11e-5 N s^2, omega_max = 1000 rad/s)
+
+    # State limits (soft)
+    z_min: 2.0                   # m
+    z_min_low_altitude: 0.0      # m, lower bound while low altitude is requested (takeoff from and landing on the pad)
+
+    # Disturbance observer (offset-free tracking): d_k = d_{k-1} + beta m (v_meas - v_pred) / T_s, |d_i| <= d_bar;
+    # vertical component frozen while the winch pulls the UAV (tether_pull topic); reset while disarmed
+    disturbance_observer: true
+    disturbance_gain: 0.03       # beta
+    disturbance_max_force: 8.0   # d_bar (N)
+    v_xy_max: 10.0               # m/s
+    v_z_max: 3.0                 # m/s, lets the UAV stop within the horizon above z_min (PX4: 1.5 down, 3 up)
+    tilt_max: 0.5                # rad, total tilt of the thrust from the vertical (predicted and commanded)
+
+    # Tether
+    use_tether: false            # Enable/Disable the coupling to the USV
+    tether_model: true           # Tether force in the prediction model (false only for the tether-unaware comparison)
+    yaw_from_reference: false    # Yaw aligned with the heading of the reference path instead of the attachment point (landing)
+    tether_max_length: 15.0      # d_max (m)
+    tether_rate_limit: 1.5       # Slew rate limit for d_max adjustments (m/s)
+    winch_speed_limit: 2.0       # d_dot_max (m/s)
+    d_dot_min: -2.0              # m/s, lower bound of the separation rate (-d_dot_max: winch reel-in speed)
+
+    # Slack penalties rho(sigma) = mu1*sigma + mu2*sigma^2
+    slack_mu1_bounds: 1000.0      # exact-penalty regime: above the multipliers of the bounds (bounded pull of the
+                                  # pseudo-Huber cost), so they give way only when they cannot be met, yet low enough that
+                                  # an unavoidable excess of a few cm/s does not call for a violent correction
+    slack_mu2_bounds: 1000.0
+    slack_mu1_speed: 300.0        # |v_xy| <= v_xy_max: its multiplier is small (bounded pull of the reference), and a
+    slack_mu2_speed: 300.0        # higher penalty turns an unavoidable excess of a few cm/s into a thrust cut
+    slack_mu1_tilt: 10000.0       # tilt bounds, in cos(tilt): an excess of a degree is only ~0.01, hence the higher weight
+    slack_mu2_tilt: 10000.0
+    slack_mu1_tether: 100000.0
+    slack_mu2_tether: 100000.0
+
+    # Normalised hover throttle (nominal; the PX4 estimate is used only if use_px4_hover_estimate is true)
+    hover_throttle: 0.618
+    # Rotor speed at zero and full throttle (SIM_GZ_EC_MIN / SIM_GZ_EC_MAX): the throttle sets the rotor speed linearly
+    rotor_speed_min: 150.0       # rad/s
+    rotor_speed_max: 1000.0      # rad/s
